@@ -1,9 +1,10 @@
 [package]
 name = "bitstream-rs"
-version = "0.1.1"
+version = "0.1.2"
 repository = "https://github.com/WanzenBug/bitstream"
 license = "MIT"
 description = "Crate for reading and writing single bit values from ordinary Readers and Writers"
+documentation = "https://docs.rs/bitstream-rs/"
 
 readme = "README.md"
 
