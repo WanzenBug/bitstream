@@ -1,7 +1,13 @@
 [package]
-name = "bitstream"
-version = "0.1.0"
-authors = ["WanzenBug <moritz9422@gmail.com>"]
+name = "bitstream-rs"
+version = "0.1.1"
+repository = "https://github.com/WanzenBug/bitstream"
+license = "MIT"
+description = "Crate for reading and writing single bit values from ordinary Readers and Writers"
+
+readme = "README.md"
+
+authors = ["WanzenBug <moritz.wanzenboeck@gmail.com>"]
 
 [lib]
 name = "bitstream"
