@@ -1,12 +1,57 @@
+//! **bitstream** is a crate for dealing with single bit input and output
+//!
+//! This crate provides a writer that can write single bits to an
+//! underlying Write implementation, and read them back using a reader
+//! implementation.
+
 use std::io::{Write, Read};
 use std::io::Result as IOResult;
 
+/// **BitWriter** is a writer for single bit values
+///
+/// Bits will be grouped to a single byte before writing to the inner writer.
+/// The first Bit will be the most significant bit of the byte.
+///
+/// When dropping this writer, any remaining bits will be written as well as an additional byte
+/// containing how many bits are significant in the last data byte. This means you can write any
+/// number of bits, they do not need to align to multiples of 8.
+///
+/// # Examples
+///
+/// ```
+/// extern crate bitstream;
+///
+/// let mut vec = Vec::new();
+/// let mut bit_writer = bitstream::BitWriter::new(vec);
+///
+/// assert!(bit_writer.write_bit(true).is_ok());
+/// assert!(bit_writer.write_bit(false).is_ok());
+/// ```
 pub struct BitWriter<W> where W: Write {
     inner: W,
     last_byte: u8,
     last_fill: u8,
 }
 
+
+/// **BitReader** is a reader for single bit values
+///
+/// This reader expects the last byte in the input to contain the number of significant bits in the
+/// second to last byte. This is the same format produced by [BitWriter]
+///
+/// # Examples
+/// ```
+/// extern crate bitstream;
+/// use std::io::Cursor;
+///
+/// let mut vec = vec![192, 2];
+/// let mut bit_reader = bitstream::BitReader::new(Cursor::new(vec));
+/// let first_read = bit_reader.read_bit();
+/// assert!(first_read.is_ok());
+/// let option = first_read.unwrap();
+/// assert!(option.is_some());
+/// assert!(option.unwrap());
+/// ```
 pub struct BitReader<R> where R: Read {
     inner: R,
     ended: bool,
@@ -17,6 +62,7 @@ pub struct BitReader<R> where R: Read {
 }
 
 impl<W> BitWriter<W> where W: Write {
+    /// Create a new BitWriter, writing to the inner writer.
     pub fn new(write: W) -> Self {
         BitWriter {
             inner: write,
@@ -25,6 +71,10 @@ impl<W> BitWriter<W> where W: Write {
         }
     }
 
+    /// Write a single bit to the inner writer.
+    ///
+    /// # Failures
+    /// Returns an error if the inner writer returns an error
     pub fn write_bit(&mut self, bit: bool) -> IOResult<()> {
         if bit {
             let data = 128u8 >> self.last_fill;
@@ -51,7 +101,9 @@ impl<W> Drop for BitWriter<W> where W: Write {
     }
 }
 
+
 impl<R> BitReader<R> where R: Read {
+    /// Create a new BitReader, reading from the inner reader.
     pub fn new(reader: R) -> Self {
         BitReader {
             inner: reader,
@@ -78,6 +130,12 @@ impl<R> BitReader<R> where R: Read {
         Ok(())
     }
 
+    /// Read a single bit.
+    ///
+    /// End of stream is signaled by returning  `Ok(None)`
+    ///
+    /// # Failures
+    /// Will return an error if the inner reader returns one
     pub fn read_bit(&mut self) -> IOResult<Option<bool>> {
         if self.fill > 0 && self.current == self.byte_fill {
             self.buffer = [self.buffer[1], self.buffer[2], 0];
